@@ -44,7 +44,9 @@ router.patch('/goals/:id', async (req, res) => {
   }
   const { id } = req.params;
   try {
-    const goal = await Goal.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
+    const goal = await Goal.findById(id);
+    updates.forEach(update => (goal[update] = req.body[update]));
+    await goal.save();
     if (!goal) {
       return res.status(404).send();
     }

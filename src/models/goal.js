@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const Goal = mongoose.model('Goal', {
+const goalSchema = mongoose.Schema({
   title: {
     type: String,
     required: true,
@@ -22,5 +22,7 @@ const Goal = mongoose.model('Goal', {
     default: false,
   },
 });
+
+const Goal = mongoose.model('Goal', goalSchema);
 
 module.exports = Goal;
