@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Task = require('./task');
 
 const goalSchema = mongoose.Schema({
   title: {
@@ -26,6 +27,13 @@ const goalSchema = mongoose.Schema({
     required: true,
     ref: 'User',
   },
+});
+
+// Delete Goal tasks when goal is deleted
+goalSchema.pre('remove', async function(next) {
+  const goal = this;
+  await Task.deleteMany({ goalDetail: goal._id });
+  next();
 });
 
 goalSchema.virtual('tasks', {
