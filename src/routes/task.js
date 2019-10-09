@@ -1,12 +1,15 @@
 const express = require('express');
-
+const auth = require('../middlewares/auth');
 const router = new express.Router();
+const Goal = require('../models/goal');
 
 const Task = require('../models/task');
 
-router.post('/tasks', async (req, res) => {
+router.post('/:goalId/tasks', auth, async (req, res) => {
   try {
-    const task = new Task(req.body);
+    const { goalId } = req.params;
+    const goal = await Goal.findOne({ _id: goalId, owner: req.user._id });
+    const task = new Task({ ...req.body, goalDetail: goal._id });
     await task.save();
     res.status(201).send(task);
   } catch (e) {
@@ -14,18 +17,24 @@ router.post('/tasks', async (req, res) => {
   }
 });
 
-router.get('/tasks', async (req, res) => {
+router.get('/:goalId/tasks', auth, async (req, res) => {
   try {
-    const tasks = await Task.find({});
-    res.status(200).send(tasks);
+    const { goalId } = req.params;
+    const goal = await Goal.findOne({ _id: goalId, owner: req.user._id });
+    await goal.populate('tasks').execPopulate();
+    res.status(200).send(goal.tasks);
   } catch (e) {
     res.status(500).send();
   }
 });
 
-router.get('/tasks/:id', async (req, res) => {
+router.get('/:goalId/tasks/:id', auth, async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id, goalId } = req.params;
+    const goal = await Goal.findOne({ _id: goalId, owner: req.user._id });
+    if (!goal) {
+      return res.status(404).send();
+    }
     const task = await Task.findById(id);
     if (!task) {
       return res.status(404).send();
@@ -36,17 +45,21 @@ router.get('/tasks/:id', async (req, res) => {
   }
 });
 
-router.patch('/tasks/:id', async (req, res) => {
+router.patch('/:goalId/tasks/:id', auth, async (req, res) => {
   const updates = Object.keys(req.body);
   const allowedUpdates = ['title', 'description', 'completed'];
   const isValidOperation = updates.every(update => allowedUpdates.includes(update));
   if (!isValidOperation) {
     return res.status(400).send({ error: 'Invalid Updates' });
   }
-  const { id } = req.params;
+  const { id, goalId } = req.params;
   try {
+    const goal = await Goal.findOne({ _id: goalId, owner: req.user._id });
+    if (!goal) {
+      return res.status(404).send();
+    }
     const task = await Task.findById(id);
-    updates.forEach(update => (task[update] = req.params[update]));
+    updates.forEach(update => (task[update] = req.body[update]));
     await task.save();
     if (!task) {
       return res.status(404).send();
@@ -57,9 +70,13 @@ router.patch('/tasks/:id', async (req, res) => {
   }
 });
 
-router.delete('/tasks/:id', async (req, res) => {
+router.delete('/:goalId/tasks/:id', auth, async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id, goalId } = req.params;
+    const goal = await Goal.findOne({ _id: goalId, owner: req.user._id });
+    if (!goal) {
+      return res.status(404).send();
+    }
     const task = await Task.findByIdAndDelete(id);
     if (!task) {
       return res.status(404).send();

@@ -21,6 +21,17 @@ const goalSchema = mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  owner: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    ref: 'User',
+  },
+});
+
+goalSchema.virtual('tasks', {
+  ref: 'Task',
+  localField: '_id',
+  foreignField: 'goalDetail',
 });
 
 const Goal = mongoose.model('Goal', goalSchema);
