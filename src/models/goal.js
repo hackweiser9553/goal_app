@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
+const Task = require('./task');
 
-const Goal = mongoose.model('Goal', {
+const goalSchema = mongoose.Schema({
   title: {
     type: String,
     required: true,
@@ -21,6 +22,26 @@ const Goal = mongoose.model('Goal', {
     type: Boolean,
     default: false,
   },
+  owner: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    ref: 'User',
+  },
 });
+
+// Delete Goal tasks when goal is deleted
+goalSchema.pre('remove', async function(next) {
+  const goal = this;
+  await Task.deleteMany({ goalDetail: goal._id });
+  next();
+});
+
+goalSchema.virtual('tasks', {
+  ref: 'Task',
+  localField: '_id',
+  foreignField: 'goalDetail',
+});
+
+const Goal = mongoose.model('Goal', goalSchema);
 
 module.exports = Goal;

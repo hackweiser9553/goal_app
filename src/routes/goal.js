@@ -1,31 +1,31 @@
 const express = require('express');
-
+const Goal = require('../models/goal');
+const auth = require('../middlewares/auth');
 const router = new express.Router();
 
-const Goal = require('../models/goal');
-
-router.post('/goals', async (req, res) => {
+router.post('/goals', auth, async (req, res) => {
+  const goal = new Goal({ ...req.body, owner: req.user._id });
   try {
-    const goal = new Goal(req.body);
     await goal.save();
+    res.status(201).send(goal);
   } catch (e) {
     res.status(400).send(e.message);
   }
 });
 
-router.get('/goals', async (req, res) => {
+router.get('/goals', auth, async (req, res) => {
   try {
-    const goals = await Goal.find({});
-    res.status(200).send(goals);
+    await req.user.populate('goals').execPopulate();
+    res.send(req.user.goals);
   } catch (e) {
     res.status(500).send();
   }
 });
 
-router.get('/goals/:id', async (req, res) => {
+router.get('/goals/:id', auth, async (req, res) => {
+  const { id } = req.params;
   try {
-    const { id } = req.params;
-    const goal = await Goal.findById(id);
+    const goal = await Goal.findOne({ _id: id, owner: req.user._id });
     if (!goal) {
       return res.status(404).send();
     }
@@ -35,7 +35,7 @@ router.get('/goals/:id', async (req, res) => {
   }
 });
 
-router.patch('/goals/:id', async (req, res) => {
+router.patch('/goals/:id', auth, async (req, res) => {
   const updates = Object.keys(req.body);
   const allowedUpdates = ['title', 'description', 'startDate', 'endDate', 'completed'];
   const isValidOperation = updates.every(update => allowedUpdates.includes(update));
@@ -44,20 +44,22 @@ router.patch('/goals/:id', async (req, res) => {
   }
   const { id } = req.params;
   try {
-    const goal = await Goal.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
+    const goal = await Goal.findOne({ _id: id, owner: req.user._id });
     if (!goal) {
       return res.status(404).send();
     }
+    updates.forEach(update => (goal[update] = req.body[update]));
+    await goal.save();
     res.send(goal);
   } catch (e) {
     res.status(400).send(e.message);
   }
 });
 
-router.delete('/goals/:id', async (req, res) => {
+router.delete('/goals/:id', auth, async (req, res) => {
   try {
     const { id } = req.params;
-    const goal = await Goal.findByIdAndDelete(id);
+    const goal = await Goal.findOneAndDelete({ _id: id, owner: req.user._id });
     if (!goal) {
       return res.status(404).send();
     }
