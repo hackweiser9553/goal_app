@@ -8,8 +8,8 @@ const Task = require('../models/task');
 router.post('/:goalId/tasks', auth, async (req, res) => {
   try {
     const { goalId } = req.params;
-    const goal = await Goal.findOne({ _id: goalId, owner: req.user._id });
-    const task = new Task({ ...req.body, goalDetail: goal._id });
+    const goal = await Goal.findById(goalId);
+    const task = new Task({ ...req.body, goalDetail: goal._id, user: req.user._id });
     await task.save();
     res.status(201).send(task);
   } catch (e) {
