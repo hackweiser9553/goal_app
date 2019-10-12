@@ -14,8 +14,19 @@ router.post('/goals', auth, async (req, res) => {
 });
 
 router.get('/goals', auth, async (req, res) => {
+  const match = {};
+
+  if (req.query.completed) {
+    match.completed = req.query.completed === 'true';
+  }
+
   try {
-    await req.user.populate('goals').execPopulate();
+    await req.user
+      .populate({
+        path: 'goals',
+        match,
+      })
+      .execPopulate();
     res.send(req.user.goals);
   } catch (e) {
     res.status(500).send();

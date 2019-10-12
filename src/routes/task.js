@@ -8,8 +8,8 @@ const Task = require('../models/task');
 router.post('/:goalId/tasks', auth, async (req, res) => {
   try {
     const { goalId } = req.params;
-    const goal = await Goal.findOne({ _id: goalId, owner: req.user._id });
-    const task = new Task({ ...req.body, goalDetail: goal._id });
+    const goal = await Goal.findById(goalId);
+    const task = new Task({ ...req.body, goalDetail: goal._id, userDetail: req.user._id });
     await task.save();
     res.status(201).send(task);
   } catch (e) {
@@ -18,10 +18,21 @@ router.post('/:goalId/tasks', auth, async (req, res) => {
 });
 
 router.get('/:goalId/tasks', auth, async (req, res) => {
+  const match = {};
+
+  if (req.query.completed) {
+    match.completed = req.query.completed === 'true';
+  }
+
   try {
     const { goalId } = req.params;
     const goal = await Goal.findOne({ _id: goalId, owner: req.user._id });
-    await goal.populate('tasks').execPopulate();
+    await goal
+      .populate({
+        path: 'tasks',
+        match,
+      })
+      .execPopulate();
     res.status(200).send(goal.tasks);
   } catch (e) {
     res.status(500).send();
