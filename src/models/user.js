@@ -5,52 +5,60 @@ const jwt = require('jsonwebtoken');
 const Goal = require('./goal');
 const Task = require('./task');
 
-const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  age: {
-    type: Number,
-    validate(val) {
-      if (val < 10) {
-        throw new Error('Age must be greater than 10');
-      }
+const userSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
     },
-  },
-  email: {
-    type: String,
-    required: true,
-    trim: true,
-    lowercase: true,
-    unique: true,
-    validate(val) {
-      if (!validator.isEmail(val)) {
-        throw new Error('Invalid Email');
-      }
-    },
-  },
-  password: {
-    type: String,
-    required: true,
-    trim: true,
-    minlength: 7,
-    validate(val) {
-      if (val.toLowerCase().includes('password')) {
-        throw new Error('Password should not contain word Password');
-      }
-    },
-  },
-  tokens: [
-    {
-      token: {
-        type: String,
-        required: true,
+    age: {
+      type: Number,
+      validate(val) {
+        if (val < 10) {
+          throw new Error('Age must be greater than 10');
+        }
       },
     },
-  ],
-});
+    email: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+      unique: true,
+      validate(val) {
+        if (!validator.isEmail(val)) {
+          throw new Error('Invalid Email');
+        }
+      },
+    },
+    password: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 7,
+      validate(val) {
+        if (val.toLowerCase().includes('password')) {
+          throw new Error('Password should not contain word Password');
+        }
+      },
+    },
+    tokens: [
+      {
+        token: {
+          type: String,
+          required: true,
+        },
+      },
+    ],
+    avatar: {
+      type: Buffer,
+    },
+  },
+  {
+    timestamps: true,
+  },
+);
 
 // Delete user tasks when user is removed
 userSchema.pre('remove', async function(next) {
@@ -81,6 +89,7 @@ userSchema.methods.toJSON = function() {
 
   delete userObject.password;
   delete userObject.tokens;
+  delete userObject.avatar;
 
   return userObject;
 };
